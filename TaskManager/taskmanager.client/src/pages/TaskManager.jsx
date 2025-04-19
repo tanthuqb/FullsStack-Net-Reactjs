@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import AddAndEditTaskForm from "./components/AddAndEditTaskForm";
 import TaskTable from "./components/TaskTable";
 
+
 export default function TaskManager() {
     const { state } = useLocation();
     const username = state?.username || "Guest";
@@ -31,7 +32,7 @@ export default function TaskManager() {
             method: "DELETE",
             credentials: "include"
         });
-        window.location.reload(); // hoặc dùng một flag để trigger refetch ở TaskTable
+        window.location.reload();
     };
 
     return (
