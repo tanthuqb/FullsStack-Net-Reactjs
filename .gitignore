@@ -1,0 +1,25 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.cache
+*.log
+*.obj
+*.pdb
+*.ipch
+*.aps
+*.iobj
+*.ilk
+*.tlog
+*.unsuccessfulbuild
+_ReSharper*/
+# Build folders
+bin/
+obj/
+# NuGet
+*.nupkg
+packages/
+# User-specific
+*.user
+# VS Code
+.vscode/
