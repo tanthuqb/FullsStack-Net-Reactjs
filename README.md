@@ -1,111 +1,105 @@
-# fullstack-aspnet-spa
+TaskManager Fullstack ASP.NET + React
 
-> [!NOTE]  
-> This project uses ASP.NET Core Web API as backend, a modern SPA frontend (React/Vite), and PostgreSQL for data. Docker support is included.
+[!NOTE]Dự án sử dụng ASP.NET Core Web API làm backend, SPA frontend (React + Vite) và PostgreSQL. Có sẵn cấu hình Docker.
 
----
+📂 Cấu trúc thư mục
 
-## 🛠 Installation (Local Dev)
+/
+├── taskmanager.client/ # React + Vite frontend
+├── taskmanager.Server/ # ASP.NET Core Web API
+├── taskmanager.tests/ # Unit & integration tests
+└── TaskManager.sln # Visual Studio solution
 
-> Requires:
-> - .NET SDK 7+
-> - Node.js
-> - PostgreSQL (or use Docker)
-> - Docker Desktop (optional)
+🛠 Cài đặt & chạy (Local Dev)
 
-### Backend
+Yêu cầu
 
-```bash
-cd backend
+.NET SDK 7+
+
+Node.js
+
+PostgreSQL (hoặc dùng Docker)
+
+Docker Desktop (tuỳ chọn)
+
+1. Backend
+
+cd taskmanager.Server
 dotnet restore
 dotnet run
-```
 
-### Frontend
+Mặc định API chạy ở http://localhost:5000
 
-```bash
-cd frontend
+2. Frontend
+
+cd taskmanager.client
 npm install
 npm run dev
-```
 
----
+Mặc định SPA chạy ở http://localhost:3000
 
-## ⚙️ Database
+3. Tests
+
+cd taskmanager.tests
+dotnet restore
+dotnet test
+
+⚙️ Database
 
 EF Core + PostgreSQL
 
-### Connection string (`backend/appsettings.Development.json`)
+Connection string (ở taskmanager.Server/appsettings.Development.json):
 
-```json
 "ConnectionStrings": {
-  "DefaultConnection": "Host=localhost;Port=5432;Database=mydb;Username=postgres;Password=yourpassword"
+"DefaultConnection": "Host=localhost;Port=5432;Database=taskmanager;Username=postgres;Password=yourpassword"
 }
-```
 
-### EF CLI commands
+EF CLI:
 
-```bash
-dotnet ef migrations add Init --project backend --startup-project backend
-dotnet ef database update --project backend --startup-project backend
-```
+dotnet ef migrations add Init --project taskmanager.Server --startup-project taskmanager.Server
+dotnet ef database update --project taskmanager.Server --startup-project taskmanager.Server
 
----
+🐳 Docker (toàn bộ stack)
 
-## 🐳 Docker Support – ✅ Ready
+1. Copy env
 
-### Features
-
-- Dockerfile for both backend + frontend
-- docker-compose for API + Client + PostgreSQL
-- .env config support
-
-### ✅ Build & Run Fullstack App
-
-```bash
 cp .env.example .env
+
+# rồi chỉnh POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB theo ý bạn
+
+2. Build & chạy
+
 docker-compose up --build
-```
 
-### Services
+Services
 
-| Service     | URL                          |
-|-------------|------------------------------|
-| Frontend    | http://localhost:3000        |
-| Backend API | http://localhost:5000/swagger|
-| PostgreSQL  | localhost:5432 (`taskmanager` DB)
+Service
 
----
+URL
 
-## 📁 Project Structure
+Frontend
 
-```
-/
-├── backend/
-│   ├── Controllers/
-│   ├── AppDbContext.cs
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   ├── vite.config.ts
-│   └── Dockerfile
-├── .env
-├── docker-compose.yml
-└── README.md
-```
+http://localhost:3000
 
----
+Backend API
 
-## 🐳 Dockerfile (backend)
+http://localhost:5000/swagger
 
-```dockerfile
+PostgreSQL
+
+localhost:5432 (DB=taskmanager)
+
+🔧 Dockerfile & docker-compose
+
+Backend (taskmanager.Server/Dockerfile)
+
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 80
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["TaskManager.Server.csproj", "."]
+COPY ["taskmanager.Server/taskmanager.Server.csproj", "."]
 RUN dotnet restore
 COPY . .
 RUN dotnet publish -c Release -o /app/publish
@@ -113,15 +107,11 @@ RUN dotnet publish -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "TaskManager.Server.dll"]
-```
+ENTRYPOINT ["dotnet", "taskmanager.Server.dll"]
 
----
+Frontend (taskmanager.client/Dockerfile)
 
-## 🐳 Dockerfile (frontend - Vite React)
-
-```dockerfile
-FROM node:18-alpine as build
+FROM node:18-alpine AS build
 WORKDIR /app
 COPY . .
 RUN npm install && npm run build
@@ -130,105 +120,69 @@ FROM nginx:stable-alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
-```
 
----
+docker-compose.yml (ở root)
 
-## 🐳 docker-compose.yml
-
-```yaml
 version: '3.8'
 
 services:
-  client:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:80"
-    depends_on:
-      - api
+client:
+build:
+context: ./taskmanager.client
+dockerfile: Dockerfile
+ports: - "3000:80"
+depends_on: - api
 
-  api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "5000:80"
-    environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=taskmanager;Username=postgres;Password=${POSTGRES_PASSWORD}
-    depends_on:
-      - postgres
+api:
+build:
+context: ./taskmanager.Server
+dockerfile: Dockerfile
+ports: - "5000:80"
+environment: - ConnectionStrings\_\_DefaultConnection=Host=postgres;Port=5432;Database=taskmanager;Username=postgres;Password=${POSTGRES_PASSWORD}
+depends_on: - postgres
 
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: taskmanager
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
+postgres:
+image: postgres:15
+environment:
+POSTGRES_USER: postgres
+POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+POSTGRES_DB: taskmanager
+ports: - "5432:5432"
+volumes: - pgdata:/var/lib/postgresql/data
 
 volumes:
-  pgdata:
-```
+pgdata:
 
----
+.env.example
 
-## 🔐 .env.example
-
-```env
 POSTGRES_PASSWORD=123456
-```
 
----
+✅ Lưu ý
 
-## ✅ Notes
+Thực thi migrations chỉ khi không ở môi trường Testing.
 
-- Uses top-level statements (`Program.cs`)
-- Vite auto-reloads on `npm run dev`
-- NGINX serves static `dist` in production
-- PostgreSQL data is stored in Docker volume
-- Compatible with Visual Studio or CLI
+Cuối Program.cs trong taskmanager.Server cần:
 
----
+public partial class Program { }
 
-## 🛠 CI/CD Friendly
+CI/CD có thể dùng Docker Compose và dotnet test trong container.
 
-Example GitHub Actions or GitLab CI:
+📦 Changelog
 
-```yaml
-steps:
-  - name: Build
-    run: docker-compose -f docker-compose.yml up --build -d
+[v0.2.0] – Docker hoàn chỉnh
 
-  - name: Run Tests
-    run: docker exec backend dotnet test
+✅ Dockerfile cho backend + frontend
 
-  - name: Push Image
-    run: |
-      docker tag backend yourrepo/backend:latest
-      docker push yourrepo/backend:latest
-```
+✅ docker‑compose với PostgreSQL
 
----
+✅ .env hỗ trợ
 
-## 📦 Changelog
+[v0.1.0] – Cài đặt ban đầu
 
-### [v0.2.0] – Full Docker Support
+ASP.NET Core Web API
 
-- ✅ Dockerfile backend + frontend
-- ✅ docker-compose with PostgreSQL
-- ✅ .env config support
+React + Vite frontend
 
-### [v0.1.0] – Initial Setup
+EF Core + PostgreSQL
 
-- ASP.NET Core Web API
-- Vite + React frontend
-- EF Core + PostgreSQL integration
-
----
-
-**Maintainer:** [hoangconglock15@gmail.com](mailto:hoangconglock15@gmail.com)
+Maintainer: hoangconglock15@gmail.com
