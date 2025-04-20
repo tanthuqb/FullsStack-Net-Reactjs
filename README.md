@@ -65,8 +65,6 @@ dotnet ef database update --project taskmanager.Server --startup-project taskman
 
 cp .env.example .env
 
-# rồi chỉnh POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB theo ý bạn
-
 2. Build & chạy
 
 docker-compose up --build
